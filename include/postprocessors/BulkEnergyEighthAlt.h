@@ -19,34 +19,25 @@
 
 **/
 
-#ifndef BULKENERGYDERIVATIVEEIGHTHALT_H
-#define BULKENERGYDERIVATIVEEIGHTHALT_H
+#ifndef BULKENERGYEIGHTHALT_H
+#define BULKENERGYEIGHTHALT_H
 
-#include "Kernel.h"
+#include "ElementIntegralPostprocessor.h"
 
-class BulkEnergyDerivativeEighthAlt: public Kernel
+class BulkEnergyEighthAlt : public ElementIntegralPostprocessor
 {
 public:
-
-  BulkEnergyDerivativeEighthAlt(const InputParameters & parameters);
+  BulkEnergyEighthAlt(const InputParameters & parameters);
 
   static InputParameters validParams();
 
 protected:
-  virtual Real computeQpResidual();
-
-  virtual Real computeQpJacobian();
-
-  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
-
-  const unsigned int _component;
-  const unsigned int _polar_x_var;
-  const unsigned int _polar_y_var;
-  const unsigned int _polar_z_var;
-  const VariableValue & _polar_x;
-  const VariableValue & _polar_y;
-  const VariableValue & _polar_z;
-  const Real _alpha1, _alpha3, _alpha11, _alpha33, _alpha12, _alpha13, _alpha111, _alpha112,_alpha123, _alpha1111, _alpha1112, _alpha1122,_alpha1123;
+  virtual Real computeQpIntegral();
+  const VariableValue& _polar_x;
+  const VariableValue& _polar_y;
+  const VariableValue& _polar_z;
+  const Real _alpha1, _alpha3, _alpha11, _alpha33, _alpha12, _alpha13, _alpha111, _alpha112,_alpha123,  _alpha1111, _alpha1112, _alpha1122, _alpha1123;
   const Real _len_scale;
 };
-#endif //BULKENERGYDERIVATIVEEIGHTHALT_H
+
+#endif
