@@ -19,23 +19,31 @@
 
 **/
 
-#include "BulkEnergyDerivativeEighth.h"
+#include "BulkEnergyDerivativeEighthAlt.h"
 #include "libmesh/utility.h"
+#include <vector>
 
-registerMooseObject("FerretApp", BulkEnergyDerivativeEighth);
+registerMooseObject("FerretApp", BulkEnergyDerivativeEigthAlt);
 
-InputParameters BulkEnergyDerivativeEighth::validParams()
+InputParameters BulkEnergyDerivativeEigthAlt::validParams()
 {
   InputParameters params = Kernel::validParams();
-  params.addClassDescription("Calculates the residual for the local free energy which is an eighth order expansion in the polarization.");
+  params.addClassDescription("Calculates the residual for the local free energy which is an sixth order expansion in the polarization.");
   params.addRequiredParam<unsigned int>("component", "An integer corresponding to the direction in order parameter space this kernel acts in (e.g. for unrotated functionals 0 for q_x, 1 for q_y, 2 for q_z).");
   params.addRequiredCoupledVar("polar_x", "The x component of the polarization");
   params.addRequiredCoupledVar("polar_y", "The y component of the polarization");
   params.addCoupledVar("polar_z", 0.0, "The z component of the polarization");
+  params.addRequiredParam<std::vector<Real>>("alpha1", "The coefficients of the Landau expansion");
+  params.addRequiredParam<std::vector<Real>>("alpha11", "The coefficients of the Landau expansion");
+  params.addRequiredParam<std::vector<Real>>("alpha12", "The coefficients of the Landau expansion");
+  params.addRequiredParam<Real>("alpha111", "The coefficients of the Landau expansion");
+  params.addRequiredParam<Real>("alpha112", "The coefficients of the Landau expansion");
+  params.addRequiredParam<Real>("alpha123", "The coefficients of the Landau expansion");
+  params.addParam<Real>("len_scale", 1.0, "the len_scale of the unit");
   return params;
 }
 
-BulkEnergyDerivativeEighth::BulkEnergyDerivativeEighth(const InputParameters & parameters)
+BulkEnergyDerivativeEigthAlt::BulkEnergyDerivativeEigthAlt(const InputParameters & parameters)
   :Kernel(parameters),
    _component(getParam<unsigned int>("component")),
    _polar_x_var(coupled("polar_x")),
@@ -44,44 +52,33 @@ BulkEnergyDerivativeEighth::BulkEnergyDerivativeEighth(const InputParameters & p
    _polar_x(coupledValue("polar_x")),
    _polar_y(coupledValue("polar_y")),
    _polar_z(coupledValue("polar_z")),
-   _alpha1(getMaterialProperty<Real>("alpha1")),
-   _alpha11(getMaterialProperty<Real>("alpha11")),
-   _alpha12(getMaterialProperty<Real>("alpha12")),
-   _alpha111(getMaterialProperty<Real>("alpha111")),
-   _alpha112(getMaterialProperty<Real>("alpha112")),
-   _alpha123(getMaterialProperty<Real>("alpha123")),
-   _alpha1111(getMaterialProperty<Real>("alpha1111")),
-   _alpha1112(getMaterialProperty<Real>("alpha1112")),
-   _alpha1122(getMaterialProperty<Real>("alpha1122")),
-   _alpha1123(getMaterialProperty<Real>("alpha1123"))
-
-   // _alpha1(getParam<std::vector<Real>>("alpha1").at(0)),
-   // _alpha3(getParam<std::vector<Real>>("alpha1").size() > 1 ? getParam<std::vector<Real>>("alpha1").at(1) : _alpha1),
-   // _alpha11(getParam<std::vector<Real>>("alpha11").at(0)),
-   // _alpha33(getParam<std::vector<Real>>("alpha11").size() > 1 ? getParam<std::vector<Real>>("alpha11").at(1) : _alpha11),
-   // _alpha12(getParam<std::vector<Real>>("alpha12").at(0)),
-   // _alpha13(getParam<std::vector<Real>>("alpha12").size() > 1 ? getParam<std::vector<Real>>("alpha12").at(1) : _alpha12),
-   // _alpha111(getParam<Real>("alpha111")),
-   // _alpha112(getParam<Real>("alpha112")),
-   // _alpha123(getParam<Real>("alpha123")),
-   // _alpha1111(getParam<Real>("alpha1111")),
-   // _alpha1112(getParam<Real>("alpha1112")),
-   // _alpha1122(getParam<Real>("alpha1122")),
-   // _alpha1123(getParam<Real>("alpha1123")),
-   // _len_scale(getParam<Real>("len_scale"))
-
+   _alpha1(getParam<std::vector<Real>>("alpha1").at(0)),
+   _alpha3(getParam<std::vector<Real>>("alpha1").size() > 1 ? getParam<std::vector<Real>>("alpha1").at(1) : _alpha1),
+   _alpha11(getParam<std::vector<Real>>("alpha11").at(0)),
+   _alpha33(getParam<std::vector<Real>>("alpha11").size() > 1 ? getParam<std::vector<Real>>("alpha11").at(1) : _alpha11),
+   _alpha12(getParam<std::vector<Real>>("alpha12").at(0)),
+   _alpha13(getParam<std::vector<Real>>("alpha12").size() > 1 ? getParam<std::vector<Real>>("alpha12").at(1) : _alpha12),
+   _alpha111(getParam<Real>("alpha111")),
+   _alpha112(getParam<Real>("alpha112")),
+   _alpha123(getParam<Real>("alpha123")),
+   _alpha1111(getParam<Real>("alpha1111")),
+   _alpha1112(getParam<Real>("alpha1112")),
+   _alpha1122(getParam<Real>("alpha1122")),
+   _alpha1123(getParam<Real>("alpha1123")),
+   _len_scale(getParam<Real>("len_scale"))
 {
 }
 
 Real
-BulkEnergyDerivativeEighth::computeQpResidual()
+BulkEnergyDerivativeEigthAlt::computeQpResidual()
 {
   if (_component == 0)
   {
-    return _test[_i][_qp] * (
-   2*_alpha1[_qp]*_polar_x[_qp] + 
-    4*_alpha11[_qp]*Utility::pow<3>(_polar_x[_qp]) + 
-   _alpha12[_qp]*(2*_polar_x[_qp]*Utility::pow<2>(_polar_y[_qp]) + 2*_polar_x[_qp]*Utility::pow<2>(_polar_z[_qp])) + 
+    return  _test[_i][_qp] * (
+        2.0 * _alpha1 * _polar_x[_qp] +
+        4.0 * _alpha11 * Utility::pow<3>(_polar_x[_qp]) +
+        2.0 * _alpha13 * _polar_x[_qp] * Utility::pow<2>(_polar_z[_qp]) +
+        2.0 * _alpha12 * _polar_x[_qp] * Utility::pow<2>(_polar_y[_qp]) +
     6*_alpha111[_qp]*Utility::pow<5>(_polar_x[_qp]) + 
     8*_alpha1111[_qp]*Utility::pow<7>(_polar_x[_qp]) + 
    2*_alpha123[_qp]*_polar_x[_qp]*Utility::pow<2>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp]) + 
@@ -89,95 +86,120 @@ BulkEnergyDerivativeEighth::computeQpResidual()
    _alpha1123[_qp]*(4*Utility::pow<3>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp]) + 2*_polar_x[_qp]*Utility::pow<4>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp]) + 2*_polar_x[_qp]*Utility::pow<2>(_polar_y[_qp])*Utility::pow<4>(_polar_z[_qp])) + 
    _alpha112[_qp]*(2*_polar_x[_qp]*Utility::pow<4>(_polar_y[_qp]) + 2*_polar_x[_qp]*Utility::pow<4>(_polar_z[_qp]) + 4*Utility::pow<3>(_polar_x[_qp])*(Utility::pow<2>(_polar_y[_qp]) + Utility::pow<2>(_polar_z[_qp]))) + 
    _alpha1112[_qp]*(2*_polar_x[_qp]*Utility::pow<6>(_polar_y[_qp]) + 2*_polar_x[_qp]*Utility::pow<6>(_polar_z[_qp]) + 6*Utility::pow<5>(_polar_x[_qp])*(Utility::pow<2>(_polar_y[_qp]) + Utility::pow<2>(_polar_z[_qp]))));
+
+
   }
   else if (_component == 1)
   {
     return _test[_i][_qp] * (
-      2*_alpha1[_qp]*_polar_y[_qp] + 
-      4*_alpha11[_qp]*Utility::pow<3>(_polar_y[_qp]) + 
+        2.0 * _alpha1 * _polar_y[_qp] +
+        4.0 * _alpha11 * Utility::pow<3>(_polar_y[_qp]) +
+        2.0 * _alpha13 * _polar_y[_qp] * Utility::pow<2>(_polar_z[_qp]) +
+        2.0 * _alpha12 * _polar_y[_qp] * Utility::pow<2>(_polar_x[_qp]) +
       6*_alpha111[_qp]*Utility::pow<5>(_polar_y[_qp]) + 
       8*_alpha1111[_qp]*Utility::pow<7>(_polar_y[_qp]) + 
    2*_alpha123[_qp]*Utility::pow<2>(_polar_x[_qp])*_polar_y[_qp]*Utility::pow<2>(_polar_z[_qp]) + 
-   _alpha12[_qp]*(2*Utility::pow<2>(_polar_x[_qp])*_polar_y[_qp] + 2*_polar_y[_qp]*Utility::pow<2>(_polar_z[_qp])) + 
    _alpha1123[_qp]*(2*Utility::pow<4>(_polar_x[_qp])*_polar_y[_qp]*Utility::pow<2>(_polar_z[_qp]) + 4*Utility::pow<2>(_polar_x[_qp])*Utility::pow<3>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp]) + 2*Utility::pow<2>(_polar_x[_qp])*_polar_y[_qp]*Utility::pow<4>(_polar_z[_qp])) + 
    _alpha1122[_qp]*(4*Utility::pow<4>(_polar_x[_qp])*Utility::pow<3>(_polar_y[_qp]) + 4*Utility::pow<3>(_polar_y[_qp])*Utility::pow<4>(_polar_z[_qp])) + 
    _alpha112[_qp]*(2*Utility::pow<4>(_polar_x[_qp])*_polar_y[_qp] + 2*_polar_y[_qp]*Utility::pow<4>(_polar_z[_qp]) + 4*Utility::pow<3>(_polar_y[_qp])*(Utility::pow<2>(_polar_x[_qp]) + Utility::pow<2>(_polar_z[_qp]))) + 
    _alpha1112[_qp]*(2*Utility::pow<6>(_polar_x[_qp])*_polar_y[_qp] + 2*_polar_y[_qp]*Utility::pow<6>(_polar_z[_qp]) + 6*Utility::pow<5>(_polar_y[_qp])*(Utility::pow<2>(_polar_x[_qp]) + Utility::pow<2>(_polar_z[_qp]))));
+
+
+
   }
   else if (_component == 2)
   {
     return _test[_i][_qp] * (
-      2*_alpha1[_qp]*_polar_z[_qp] + 
+        2.0 * _alpha3 * _polar_z[_qp] +
+        4.0 * _alpha33 * Utility::pow<3>(_polar_z[_qp]) +
+        2.0 * _alpha13 * _polar_z[_qp] * ( Utility::pow<2>(_polar_x[_qp]) + Utility::pow<2>(_polar_y[_qp]) ) +
+
       2*_alpha123[_qp]*Utility::pow<2>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp])*_polar_z[_qp] + 
-      4*_alpha11[_qp]*Utility::pow<3>(_polar_z[_qp]) + 
+
    6*_alpha111[_qp]*Utility::pow<5>(_polar_z[_qp]) + 
    8*_alpha1111[_qp]*Utility::pow<7>(_polar_z[_qp]) + 
-   _alpha12[_qp]*(2*Utility::pow<2>(_polar_x[_qp])*_polar_z[_qp] + 2*Utility::pow<2>(_polar_y[_qp])*_polar_z[_qp]) + 
    _alpha1123[_qp]*(2*Utility::pow<4>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp])*_polar_z[_qp] + 2*Utility::pow<2>(_polar_x[_qp])*Utility::pow<4>(_polar_y[_qp])*_polar_z[_qp] + 4*Utility::pow<2>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp])*Utility::pow<3>(_polar_z[_qp])) + 
    _alpha1122[_qp]*(4*Utility::pow<4>(_polar_x[_qp])*Utility::pow<3>(_polar_z[_qp]) + 4*Utility::pow<4>(_polar_y[_qp])*Utility::pow<3>(_polar_z[_qp])) + 
    _alpha112[_qp]*(2*Utility::pow<4>(_polar_x[_qp])*_polar_z[_qp] + 2*Utility::pow<4>(_polar_y[_qp])*_polar_z[_qp] + 4*(Utility::pow<2>(_polar_x[_qp]) + Utility::pow<2>(_polar_y[_qp]))*Utility::pow<3>(_polar_z[_qp])) + 
    _alpha1112[_qp]*(2*Utility::pow<6>(_polar_x[_qp])*_polar_z[_qp] + 2*Utility::pow<6>(_polar_y[_qp])*_polar_z[_qp] + 6*(Utility::pow<2>(_polar_x[_qp]) + Utility::pow<2>(_polar_y[_qp]))*Utility::pow<5>(_polar_z[_qp])));
+
   }
-  else
+  else 
+  {
     return 0.0;
+  }
 }
 
 Real
-BulkEnergyDerivativeEighth::computeQpJacobian()
-{
+BulkEnergyDerivativeEigthAlt::computeQpJacobian()
+{  
   if (_component == 0)
   {
     return _test[_i][_qp] * _phi[_j][_qp] * (
-      2*_alpha1[_qp] + 
-      12*_alpha11[_qp]*Utility::pow<2>(_polar_x[_qp]) + 
+        2.0 * _alpha1 + 
+        12.0 * _alpha11 * Utility::pow<2>(_polar_x[_qp]) + 
+        2.0 * _alpha13 * Utility::pow<2>(_polar_z[_qp]) +
+        2.0 * _alpha12 * Utility::pow<2>(_polar_y[_qp]) + 
       30*_alpha111[_qp]*Utility::pow<4>(_polar_x[_qp]) + 
       56*_alpha1111[_qp]*Utility::pow<6>(_polar_x[_qp]) + 
    2*_alpha123[_qp]*Utility::pow<2>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp]) +
-    _alpha12[_qp]*(2*Utility::pow<2>(_polar_y[_qp]) + 2*Utility::pow<2>(_polar_z[_qp])) + 
    _alpha1122[_qp]*(12*Utility::pow<2>(_polar_x[_qp])*Utility::pow<4>(_polar_y[_qp]) + 12*Utility::pow<2>(_polar_x[_qp])*Utility::pow<4>(_polar_z[_qp])) + 
    _alpha1123[_qp]*(12*Utility::pow<2>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp]) + 2*Utility::pow<4>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp]) +  2*Utility::pow<2>(_polar_y[_qp])*Utility::pow<4>(_polar_z[_qp])) + 
    _alpha112[_qp]*(2*Utility::pow<4>(_polar_y[_qp]) + 2*Utility::pow<4>(_polar_z[_qp]) + 12*Utility::pow<2>(_polar_x[_qp])*(Utility::pow<2>(_polar_y[_qp]) + Utility::pow<2>(_polar_z[_qp]))) + 
    _alpha1112[_qp]*(2*Utility::pow<6>(_polar_y[_qp]) + 2*Utility::pow<6>(_polar_z[_qp]) + 30*Utility::pow<4>(_polar_x[_qp])*(Utility::pow<2>(_polar_y[_qp]) + Utility::pow<2>(_polar_z[_qp]))));
+
+
   }
   else if (_component == 1)
   {
     return _test[_i][_qp] * _phi[_j][_qp] * (
-      2*_alpha1[_qp] + 
-      12*_alpha11[_qp]*Utility::pow<2>(_polar_y[_qp]) + 
+        2.0 * _alpha1 + 
+        12.0 * _alpha11 * Utility::pow<2>(_polar_y[_qp]) + 
+        2.0 * _alpha13 * Utility::pow<2>(_polar_z[_qp]) +
+        2.0 * _alpha12 * Utility::pow<2>(_polar_x[_qp]) +
       30*_alpha111[_qp]*Utility::pow<4>(_polar_y[_qp]) +
        56*_alpha1111[_qp]*Utility::pow<6>(_polar_y[_qp]) + 
    2*_alpha123[_qp]*Utility::pow<2>(_polar_x[_qp])*Utility::pow<2>(_polar_z[_qp]) + 
-   _alpha12[_qp]*(2*Utility::pow<2>(_polar_x[_qp]) + 2*Utility::pow<2>(_polar_z[_qp])) + 
    _alpha1123[_qp]*(2*Utility::pow<4>(_polar_x[_qp])*Utility::pow<2>(_polar_z[_qp]) + 12*Utility::pow<2>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp]) + 2*Utility::pow<2>(_polar_x[_qp])*Utility::pow<4>(_polar_z[_qp])) + 
    _alpha1122[_qp]*(12*Utility::pow<4>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp]) + 12*Utility::pow<2>(_polar_y[_qp])*Utility::pow<4>(_polar_z[_qp])) + 
    _alpha112[_qp]*(2*Utility::pow<4>(_polar_x[_qp]) + 2*Utility::pow<4>(_polar_z[_qp]) + 12*Utility::pow<2>(_polar_y[_qp])*(Utility::pow<2>(_polar_x[_qp]) + Utility::pow<2>(_polar_z[_qp]))) + 
    _alpha1112[_qp]*(2*Utility::pow<6>(_polar_x[_qp]) + 2*Utility::pow<6>(_polar_z[_qp]) + 30*Utility::pow<4>(_polar_y[_qp])*(Utility::pow<2>(_polar_x[_qp]) + Utility::pow<2>(_polar_z[_qp]))));
+
+
+
   }
   else if (_component == 2)
   {
+
     return _test[_i][_qp] * _phi[_j][_qp] * (
-      2*_alpha1[_qp] + 
+        2.0 * _alpha3 + 
+        12.0 * _alpha33 * Utility::pow<2>(_polar_z[_qp]) + 
+        2.0 * _alpha13 * ( Utility::pow<2>(_polar_x[_qp]) + Utility::pow<2>(_polar_y[_qp]) ) + 
+        
       2*_alpha123[_qp]*Utility::pow<2>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp]) + 
-      _alpha12[_qp]*(2*Utility::pow<2>(_polar_x[_qp]) + 2*Utility::pow<2>(_polar_y[_qp])) + 
-   12*_alpha11[_qp]*Utility::pow<2>(_polar_z[_qp]) + 
    30*_alpha111[_qp]*Utility::pow<4>(_polar_z[_qp]) + 
    56*_alpha1111[_qp]*Utility::pow<6>(_polar_z[_qp]) + 
    _alpha1123[_qp]*(2*Utility::pow<4>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp]) + 2*Utility::pow<2>(_polar_x[_qp])*Utility::pow<4>(_polar_y[_qp]) + 12*Utility::pow<2>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp])) + 
    _alpha1122[_qp]*(12*Utility::pow<4>(_polar_x[_qp])*Utility::pow<2>(_polar_z[_qp]) + 12*Utility::pow<4>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp])) + 
    _alpha112[_qp]*(2*Utility::pow<4>(_polar_x[_qp]) + 2*Utility::pow<4>(_polar_y[_qp]) + 12*(Utility::pow<2>(_polar_x[_qp]) + Utility::pow<2>(_polar_y[_qp]))*Utility::pow<2>(_polar_z[_qp])) + 
    _alpha1112[_qp]*(2*Utility::pow<6>(_polar_x[_qp]) + 2*Utility::pow<6>(_polar_y[_qp]) + 30*(Utility::pow<2>(_polar_x[_qp]) + Utility::pow<2>(_polar_y[_qp]))*Utility::pow<4>(_polar_z[_qp])));
+
+
   }
-  else
+  else 
+  {
     return 0.0;
+  }
 }
 
+
 Real
-BulkEnergyDerivativeEighth::computeQpOffDiagJacobian(unsigned int jvar)
+BulkEnergyDerivativeEigthAlt::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  if (_component == 0)
-  {
+  if(_component == 0) {
     if (jvar == _polar_y_var)
     {
+
       return _test[_i][_qp] * _phi[_j][_qp] *  (
          4*_alpha12[_qp]*_polar_x[_qp]*_polar_y[_qp] + 
          16*_alpha1122[_qp]*Utility::pow<3>(_polar_x[_qp])*Utility::pow<3>(_polar_y[_qp]) + 
@@ -186,16 +208,19 @@ BulkEnergyDerivativeEighth::computeQpOffDiagJacobian(unsigned int jvar)
    4*_alpha123[_qp]*_polar_x[_qp]*_polar_y[_qp]*Utility::pow<2>(_polar_z[_qp]) + 
    _alpha1123[_qp]*(8*Utility::pow<3>(_polar_x[_qp])*_polar_y[_qp]*Utility::pow<2>(_polar_z[_qp]) + 8*_polar_x[_qp]*Utility::pow<3>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp]) + 4*_polar_x[_qp]*_polar_y[_qp]*Utility::pow<4>(_polar_z[_qp])));
    
+   
     }
     else if (jvar == _polar_z_var)
     {
       return _test[_i][_qp] * _phi[_j][_qp] *  (
-         4*_alpha12[_qp]*_polar_x[_qp]*_polar_z[_qp] + 
+            4.0 * _alpha13 * _polar_x[_qp] * _polar_z[_qp] +
          4*_alpha123[_qp]*_polar_x[_qp]*Utility::pow<2>(_polar_y[_qp])*_polar_z[_qp] +
           16*_alpha1122[_qp]*Utility::pow<3>(_polar_x[_qp])*Utility::pow<3>(_polar_z[_qp]) + 
    _alpha112[_qp]*(8*Utility::pow<3>(_polar_x[_qp])*_polar_z[_qp] + 8*_polar_x[_qp]*Utility::pow<3>(_polar_z[_qp])) + 
    _alpha1123[_qp]*(8*Utility::pow<3>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp])*_polar_z[_qp] + 4*_polar_x[_qp]*Utility::pow<4>(_polar_y[_qp])*_polar_z[_qp] + 8*_polar_x[_qp]*Utility::pow<2>(_polar_y[_qp])*Utility::pow<3>(_polar_z[_qp])) + 
       _alpha1112[_qp]*(12*Utility::pow<5>(_polar_x[_qp])*_polar_z[_qp] + 12*_polar_x[_qp]*Utility::pow<5>(_polar_z[_qp])));
+
+
     }
     else
     {
@@ -214,49 +239,53 @@ BulkEnergyDerivativeEighth::computeQpOffDiagJacobian(unsigned int jvar)
    4*_alpha123[_qp]*_polar_x[_qp]*_polar_y[_qp]*Utility::pow<2>(_polar_z[_qp]) + 
    _alpha1123[_qp]*(8*Utility::pow<3>(_polar_x[_qp])*_polar_y[_qp]*Utility::pow<2>(_polar_z[_qp]) + 8*_polar_x[_qp]*Utility::pow<3>(_polar_y[_qp])*Utility::pow<2>(_polar_z[_qp]) + 4*_polar_x[_qp]*_polar_y[_qp]*Utility::pow<4>(_polar_z[_qp])));
  
-    }
+    } 
     else if (jvar == _polar_z_var)
     {
-      return _test[_i][_qp] * _phi[_j][_qp] *  (
-         4*_alpha12[_qp]*_polar_y[_qp]*_polar_z[_qp] + 
+        return _test[_i][_qp] * _phi[_j][_qp] *  (
+            4*_alpha13[_qp]*_polar_y[_qp]*_polar_z[_qp] + 
          4*_alpha123[_qp]*Utility::pow<2>(_polar_x[_qp])*_polar_y[_qp]*_polar_z[_qp] + 
-         16*_alpha1122[_qp]*Utility::pow<3>(_polar_y[_qp])*Utility::pow<3>(_polar_z[_qp]) + 
-   _alpha112[_qp]*(8*Utility::pow<3>(_polar_y[_qp])*_polar_z[_qp] + 8*_polar_y[_qp]*Utility::pow<3>(_polar_z[_qp])) + 
-   _alpha1123[_qp]*(4*Utility::pow<4>(_polar_x[_qp])*_polar_y[_qp]*_polar_z[_qp] + 8*Utility::pow<2>(_polar_x[_qp])*Utility::pow<3>(_polar_y[_qp])*_polar_z[_qp] + 8*Utility::pow<2>(_polar_x[_qp])*_polar_y[_qp]*Utility::pow<3>(_polar_z[_qp])) + 
+         16*_alpha1122[_qp]*Utility::pow<3>(_polar_y[_qp])*Utility::pow<3>(_polar_z[_qp]) +
+            _alpha112[_qp]*(8*Utility::pow<3>(_polar_y[_qp])*_polar_z[_qp] + 8*_polar_y[_qp]*Utility::pow<3>(_polar_z[_qp])) + 
+            _alpha1123[_qp]*(4*Utility::pow<4>(_polar_x[_qp])*_polar_y[_qp]*_polar_z[_qp] + 8*Utility::pow<2>(_polar_x[_qp])*Utility::pow<3>(_polar_y[_qp])*_polar_z[_qp] + 8*Utility::pow<2>(_polar_x[_qp])*_polar_y[_qp]*Utility::pow<3>(_polar_z[_qp])) + 
       _alpha1112[_qp]*(12*Utility::pow<5>(_polar_y[_qp])*_polar_z[_qp] + 12*_polar_y[_qp]*Utility::pow<5>(_polar_z[_qp])));
     }
-    else
+    else 
     {
-      return 0.0;
+        return 0.0;
     }
   }
   else if (_component == 2)
   {
     if (jvar == _polar_x_var)
     {
-      return _test[_i][_qp] * _phi[_j][_qp] *  (
-         4*_alpha12[_qp]*_polar_x[_qp]*_polar_z[_qp] + 
-         4*_alpha123[_qp]*_polar_x[_qp]*Utility::pow<2>(_polar_y[_qp])*_polar_z[_qp] +
-          16*_alpha1122[_qp]*Utility::pow<3>(_polar_x[_qp])*Utility::pow<3>(_polar_z[_qp]) + 
+        return _test[_i][_qp] * _phi[_j][_qp] *  (
+            4*_alpha13[_qp]*_polar_x[_qp]*_polar_z[_qp] + 
+         4*_alpha123[_qp]*_polar_x[_qp]*Utility::pow<2>(_polar_y[_qp])*_polar_z[_qp] + 
+            16*_alpha1122[_qp]*Utility::pow<3>(_polar_x[_qp])*Utility::pow<3>(_polar_z[_qp]) + 
    _alpha112[_qp]*(8*Utility::pow<3>(_polar_x[_qp])*_polar_z[_qp] + 8*_polar_x[_qp]*Utility::pow<3>(_polar_z[_qp])) + 
-   _alpha1123[_qp]*(8*Utility::pow<3>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp])*_polar_z[_qp] + 4*_polar_x[_qp]*Utility::pow<4>(_polar_y[_qp])*_polar_z[_qp] + 8*_polar_x[_qp]*Utility::pow<2>(_polar_y[_qp])*Utility::pow<3>(_polar_z[_qp])) + 
+            _alpha1123[_qp]*(8*Utility::pow<3>(_polar_x[_qp])*Utility::pow<2>(_polar_y[_qp])*_polar_z[_qp] + 4*_polar_x[_qp]*Utility::pow<4>(_polar_y[_qp])*_polar_z[_qp] + 8*_polar_x[_qp]*Utility::pow<2>(_polar_y[_qp])*Utility::pow<3>(_polar_z[_qp])) + 
       _alpha1112[_qp]*(12*Utility::pow<5>(_polar_x[_qp])*_polar_z[_qp] + 12*_polar_x[_qp]*Utility::pow<5>(_polar_z[_qp])));
-    }
+    } 
+
+    
     else if (jvar == _polar_y_var)
     {
-      return _test[_i][_qp] * _phi[_j][_qp] *  (
-         4*_alpha12[_qp]*_polar_y[_qp]*_polar_z[_qp] + 
+        return _test[_i][_qp] * _phi[_j][_qp] *  (
+            4*_alpha13[_qp]*_polar_y[_qp]*_polar_z[_qp] + 
          4*_alpha123[_qp]*Utility::pow<2>(_polar_x[_qp])*_polar_y[_qp]*_polar_z[_qp] + 
-         16*_alpha1122[_qp]*Utility::pow<3>(_polar_y[_qp])*Utility::pow<3>(_polar_z[_qp]) + 
+            16*_alpha1122[_qp]*Utility::pow<3>(_polar_y[_qp])*Utility::pow<3>(_polar_z[_qp]) + 
    _alpha112[_qp]*(8*Utility::pow<3>(_polar_y[_qp])*_polar_z[_qp] + 8*_polar_y[_qp]*Utility::pow<3>(_polar_z[_qp])) + 
-   _alpha1123[_qp]*(4*Utility::pow<4>(_polar_x[_qp])*_polar_y[_qp]*_polar_z[_qp] + 8*Utility::pow<2>(_polar_x[_qp])*Utility::pow<3>(_polar_y[_qp])*_polar_z[_qp] + 8*Utility::pow<2>(_polar_x[_qp])*_polar_y[_qp]*Utility::pow<3>(_polar_z[_qp])) + 
+            _alpha1123[_qp]*(4*Utility::pow<4>(_polar_x[_qp])*_polar_y[_qp]*_polar_z[_qp] + 8*Utility::pow<2>(_polar_x[_qp])*Utility::pow<3>(_polar_y[_qp])*_polar_z[_qp] + 8*Utility::pow<2>(_polar_x[_qp])*_polar_y[_qp]*Utility::pow<3>(_polar_z[_qp])) + 
       _alpha1112[_qp]*(12*Utility::pow<5>(_polar_y[_qp])*_polar_z[_qp] + 12*_polar_y[_qp]*Utility::pow<5>(_polar_z[_qp])));
     }
     else
     {
-      return 0.0;
+        return 0.0;
     }
   }
-  else
+  else 
+  {
     return 0.0;
+  }
 }

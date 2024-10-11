@@ -671,7 +671,7 @@
     # eigen_base = 'exx exy exz eyx eyy eyz ezx ezy ezz'
     eigen_base = '1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0'
     eigenstrain_name = eigenstrain
-    prefactor = 0.0
+    prefactor = -0.01
   [../]
 
   [./elasticity_tensor_1]
@@ -854,7 +854,7 @@
     type = GlobalATiO3MaterialRVEUserObject
     use_displaced_mesh = false
     execute_on = 'Initial Linear Nonlinear'
-    applied_stress_tensor = '2.1 2.1 1.9056 0.0 0.0 0.0'
+   # applied_stress_tensor = '2.1 2.1 1.9056 0.0 0.0 0.0'
     block = '0'
   [../]
 
@@ -928,6 +928,7 @@
 
   print_linear_residuals = false
   perf_graph = false
+  checkpoint = true
 
   [./out]
     type = Exodus

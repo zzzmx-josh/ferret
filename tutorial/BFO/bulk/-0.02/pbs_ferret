@@ -1,0 +1,16 @@
+#!/bin/bash
+#PBS -N ferret
+#PBS -l nodes=1:ppn=24
+#PBS -l walltime=1200:00:00
+#PBS -j oe
+#PBS -q C24
+#PBS -V
+
+cd $PBS_O_WORKDIR
+
+mamba activate moose
+
+#mpirun -machinefile $PBS_NODEFILE ferret-opt -i film.i > run.log 2>&1
+
+mpirun -machinefile $PBS_NODEFILE ferret-opt -i input.i  > run.log 2>&1
+
