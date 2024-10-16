@@ -44,6 +44,10 @@ protected:
   const VariableValue & _polar_x;
   const VariableValue & _polar_y;
   const VariableValue & _polar_z;
+  // const unsigned int _temperature_var;
+  // const VariableValue & _temperature;
+  // const MaterialProperty<Real> & _Tc;
+  // const MaterialProperty<Real> & _alpha0;
   const MaterialProperty<Real> & _alpha1;
   const MaterialProperty<Real> & _alpha11;
   const MaterialProperty<Real> & _alpha12;

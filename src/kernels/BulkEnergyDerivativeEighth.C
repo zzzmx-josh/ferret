@@ -32,6 +32,8 @@ InputParameters BulkEnergyDerivativeEighth::validParams()
   params.addRequiredCoupledVar("polar_x", "The x component of the polarization");
   params.addRequiredCoupledVar("polar_y", "The y component of the polarization");
   params.addCoupledVar("polar_z", 0.0, "The z component of the polarization");
+  // params.addRequiredParam<Real>("Tc","Transition temperature of unstrained ferroelectric");
+  // params.addRequiredCoupledVar("temperature", 298,"The temperature at the grid point");
   return params;
 }
 
@@ -44,6 +46,13 @@ BulkEnergyDerivativeEighth::BulkEnergyDerivativeEighth(const InputParameters & p
    _polar_x(coupledValue("polar_x")),
    _polar_y(coupledValue("polar_y")),
    _polar_z(coupledValue("polar_z")),
+    // _Tc(getParam<Real>("Tc")),
+  //  _temperature_var(coupled("temperature")),
+  //  _temperature(coupledValue("temperature")),
+  //    _Tc(getMaterialProperty<Real>("Tc")),
+  //  _alpha0(getMaterialProperty<Real>("alpha0")),
+    // _alpha1(getMaterialProperty<Real>("alpha0")),
+  // _alpha1(declareProperty<RankFourTensor>("alpha1")),
    _alpha1(getMaterialProperty<Real>("alpha1")),
    _alpha11(getMaterialProperty<Real>("alpha11")),
    _alpha12(getMaterialProperty<Real>("alpha12")),
@@ -54,32 +63,19 @@ BulkEnergyDerivativeEighth::BulkEnergyDerivativeEighth(const InputParameters & p
    _alpha1112(getMaterialProperty<Real>("alpha1112")),
    _alpha1122(getMaterialProperty<Real>("alpha1122")),
    _alpha1123(getMaterialProperty<Real>("alpha1123"))
-
-   // _alpha1(getParam<std::vector<Real>>("alpha1").at(0)),
-   // _alpha3(getParam<std::vector<Real>>("alpha1").size() > 1 ? getParam<std::vector<Real>>("alpha1").at(1) : _alpha1),
-   // _alpha11(getParam<std::vector<Real>>("alpha11").at(0)),
-   // _alpha33(getParam<std::vector<Real>>("alpha11").size() > 1 ? getParam<std::vector<Real>>("alpha11").at(1) : _alpha11),
-   // _alpha12(getParam<std::vector<Real>>("alpha12").at(0)),
-   // _alpha13(getParam<std::vector<Real>>("alpha12").size() > 1 ? getParam<std::vector<Real>>("alpha12").at(1) : _alpha12),
-   // _alpha111(getParam<Real>("alpha111")),
-   // _alpha112(getParam<Real>("alpha112")),
-   // _alpha123(getParam<Real>("alpha123")),
-   // _alpha1111(getParam<Real>("alpha1111")),
-   // _alpha1112(getParam<Real>("alpha1112")),
-   // _alpha1122(getParam<Real>("alpha1122")),
-   // _alpha1123(getParam<Real>("alpha1123")),
-   // _len_scale(getParam<Real>("len_scale"))
-
 {
+
 }
 
 Real
 BulkEnergyDerivativeEighth::computeQpResidual()
 {
+    // _alpha1[_qp] =  _alpha0[_qp] * (_temperature[_qp] - _Tc[_qp]);
+
   if (_component == 0)
   {
     return _test[_i][_qp] * (
-   2*_alpha1[_qp]*_polar_x[_qp] + 
+    2*_alpha1[_qp]*_polar_x[_qp] + 
     4*_alpha11[_qp]*Utility::pow<3>(_polar_x[_qp]) + 
    _alpha12[_qp]*(2*_polar_x[_qp]*Utility::pow<2>(_polar_y[_qp]) + 2*_polar_x[_qp]*Utility::pow<2>(_polar_z[_qp])) + 
     6*_alpha111[_qp]*Utility::pow<5>(_polar_x[_qp]) + 
@@ -125,6 +121,7 @@ BulkEnergyDerivativeEighth::computeQpResidual()
 Real
 BulkEnergyDerivativeEighth::computeQpJacobian()
 {
+    // _alpha1[_qp] =  _alpha0[_qp] * (_temperature[_qp] - _Tc[_qp]);
   if (_component == 0)
   {
     return _test[_i][_qp] * _phi[_j][_qp] * (
@@ -174,6 +171,8 @@ BulkEnergyDerivativeEighth::computeQpJacobian()
 Real
 BulkEnergyDerivativeEighth::computeQpOffDiagJacobian(unsigned int jvar)
 {
+
+    // _alpha1[_qp] =  _alpha0[_qp] * (_temperature[_qp] - _Tc[_qp]);
   if (_component == 0)
   {
     if (jvar == _polar_y_var)
